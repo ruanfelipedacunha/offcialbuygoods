@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
   accountId: '5316',
-  token: 'dVb6dV6EcItKSSpS9C7zk6xWI8jQ4Is2WovTHHwvvS0Mj14METP7vdCcjP%2B6Lo%2Fq7%2FEtRYdAP9M2yXrtQa6PkG0%2FIRkdXlnMPbp03Olvb8A7%2BVmXG7EFpBQsfIgX%2FvCakezI',
+  token: 'b93D9puIHK28so8TAk2U4p38P%2BnpsnOySexmELdMS7ufAu2Z%2BD3mhz4t6tibcbrB6gG0oawtIWWM5lHimzzVCSvQJwNMZpqiZ7u%2B2hPXyrH%2FKrS1ZXO1ZKu0lTQPxCNC2jRU',
 };
 
 export const VAPID_PUBLIC_KEY = 'BH5BV2kOSTyFl6Z2Izun_fjzgSHQwA-RuOdxsed9PBv2PTz8Oh9Gj5jUQJ_cabZoAtcHKlY3ccVoHRvP7RzNRG4';

@@ -43,8 +43,7 @@ export default defineConfig({
       '/api/clickcrm': {
         target: 'https://api.clickcrm.com',
         changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api\/clickcrm/, '/v1/affiliates'),
+        rewrite: (path) => path.replace(/^\/api\/clickcrm/, '/affiliates/v1'),
       }
     }
   }

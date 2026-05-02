@@ -6,7 +6,7 @@
     },
     {
       "source": "/api/clickcrm/:path*",
-      "destination": "https://api.clickcrm.com/v1/affiliates/:path*"
+      "destination": "https://api.clickcrm.com/affiliates/v1/:path*"
     },
     {
       "source": "/(.*)",
