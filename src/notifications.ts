@@ -58,20 +58,35 @@ export function showLocalNotification(title: string, body: string, tag?: string)
   }
 }
 
-// Track previous state to detect new sales/conversions
+// Track previous state to detect new events
 let previousConversions = -1;
 let previousNetCommissions = -1;
+let previousVisits = -1;
 
 export function checkForNewSales(
   currentConversions: number,
-  currentNetCommissions: number
+  currentNetCommissions: number,
+  currentVisits: number
 ) {
+  // First run: just initialize the values
   if (previousConversions === -1) {
     previousConversions = currentConversions;
     previousNetCommissions = currentNetCommissions;
+    previousVisits = currentVisits;
     return;
   }
 
+  // Check for new visits
+  if (currentVisits > previousVisits) {
+    const newVisits = currentVisits - previousVisits;
+    showLocalNotification(
+      `👀 +${newVisits} Nova${newVisits > 1 ? 's Visitas' : ' Visita'}`,
+      `Você recebeu ${newVisits} nova${newVisits > 1 ? 's visitas' : ' visita'} no seu link!`,
+      'new-visit'
+    );
+  }
+
+  // Check for new sales
   if (currentConversions > previousConversions) {
     const newSales = currentConversions - previousConversions;
     showLocalNotification(
@@ -81,6 +96,7 @@ export function checkForNewSales(
     );
   }
 
+  // Check for commission increases
   if (currentNetCommissions > previousNetCommissions) {
     const diff = (currentNetCommissions - previousNetCommissions).toFixed(2);
     showLocalNotification(
@@ -90,6 +106,8 @@ export function checkForNewSales(
     );
   }
 
+  // Update history
   previousConversions = currentConversions;
   previousNetCommissions = currentNetCommissions;
+  previousVisits = currentVisits;
 }

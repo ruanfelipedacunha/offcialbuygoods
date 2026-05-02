@@ -52,7 +52,7 @@ export default function App() {
       setLastUpdated(new Date());
 
       const summary = computeSummary(daily);
-      checkForNewSales(summary.totalConversions, summary.totalNetCommissions);
+      checkForNewSales(summary.totalConversions, summary.totalNetCommissions, summary.totalVisits);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro ao carregar dados';
       setError(msg);
