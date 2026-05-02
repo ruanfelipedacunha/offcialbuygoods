@@ -1,4 +1,5 @@
 import { VAPID_PUBLIC_KEY } from './config';
+import { supabase } from './lib/supabase';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -26,12 +27,27 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
   try {
     const registration = await navigator.serviceWorker.ready;
     const existing = await registration.pushManager.getSubscription();
-    if (existing) return existing;
+    
+    let subscription = existing;
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as any,
+      });
+    }
 
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as any,
-    });
+    if (subscription) {
+      // Save or update subscription in Supabase
+      const { error } = await supabase
+        .from('monitor_config')
+        .upsert({
+          subscription: subscription.toJSON(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'subscription' });
+      
+      if (error) console.error('Error saving subscription to Supabase:', error);
+    }
+
     return subscription;
   } catch (err) {
     console.error('Failed to subscribe to push:', err);

@@ -4,7 +4,7 @@ export const API_CONFIG = {
   token: 'b93D9puIHK28so8TAk2U4p38P%2BnpsnOySexmELdMS7ufAu2Z%2BD3mhz4t6tibcbrB6gG0oawtIWWM5lHimzzVCSvQJwNMZpqiZ7u%2B2hPXyrH%2FKrS1ZXO1ZKu0lTQPxCNC2jRU',
 };
 
-export const VAPID_PUBLIC_KEY = 'BH5BV2kOSTyFl6Z2Izun_fjzgSHQwA-RuOdxsed9PBv2PTz8Oh9Gj5jUQJ_cabZoAtcHKlY3ccVoHRvP7RzNRG4';
+export const VAPID_PUBLIC_KEY = 'BMqEhsIsAFHlJQUiD4BHeeKvTDg5_R-4qEjHfg9qEIHM3s4W6JY10_1rAj8gyHcPm3Tv1SpzFgm83BKoE3_hv8Q';
 
 // Build date range params (last N days)
 export function buildDateRange(days = 60): { dateFrom: string; dateTo: string } {
