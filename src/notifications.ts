@@ -46,7 +46,12 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
           updated_at: new Date().toISOString()
         }, { onConflict: 'endpoint' });
       
-      if (error) console.error('Error saving subscription to Supabase:', error);
+      if (error) {
+        console.error('Error saving subscription to Supabase:', error);
+        alert('Erro ao salvar no Supabase: ' + error.message);
+      } else {
+        alert('✅ Sucesso! Seu aparelho foi registrado para notificações 24h.');
+      }
     }
 
     return subscription;
