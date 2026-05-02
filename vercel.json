@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/buygoods/:path*",
+      "destination": "https://api.buygoods.com/affiliates/api/v1/:path*"
+    },
+    {
+      "source": "/api/clickcrm/:path*",
+      "destination": "https://api.clickcrm.com/affiliates/api/v1/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
