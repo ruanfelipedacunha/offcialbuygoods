@@ -41,9 +41,10 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
       const { error } = await supabase
         .from('monitor_config')
         .upsert({
+          endpoint: subscription.endpoint,
           subscription: subscription.toJSON(),
           updated_at: new Date().toISOString()
-        }, { onConflict: 'subscription' });
+        }, { onConflict: 'endpoint' });
       
       if (error) console.error('Error saving subscription to Supabase:', error);
     }
