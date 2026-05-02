@@ -32,9 +32,10 @@ async function fetchAllPages<T>(
         data = response.data;
         break; // success
       } catch (error: any) {
-        if (error.response?.status === 429) {
+        const status = error.response?.status;
+        if (status === 429 || status === 503 || status === 502 || status === 504) {
           retryCount++;
-          console.warn(`Rate limit hit (429). Retrying in ${retryCount * 5}s...`);
+          console.warn(`API Error (${status}). Retrying in ${retryCount * 5}s...`);
           await sleep(retryCount * 5000); // 5s, 10s, 15s delay
         } else {
           throw error;
