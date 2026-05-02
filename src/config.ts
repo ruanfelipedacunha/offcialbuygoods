@@ -23,7 +23,7 @@ export function buildClickCRMUrl(
   dateTo: string,
   nextPage?: number
 ): string {
-  const base = `/api/clickcrm/${endpoint}.php`;
+  const base = `/api/clickcrm/${endpoint}`;
   let url = `${base}?a=${API_CONFIG.accountId}&token=${API_CONFIG.token}&date_from=${dateFrom}&date_to=${dateTo}&response_type=json`;
   if (nextPage !== undefined) url += `&next_page=${nextPage}`;
   return url;
