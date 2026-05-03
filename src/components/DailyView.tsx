@@ -35,14 +35,13 @@ export default function DailyView({ dailyData, days, setDays }: Props) {
       {
         label: 'Visitas',
         data: sorted.map(d => d.visits),
-        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-        borderColor: 'rgba(59, 130, 246, 1)',
-        borderWidth: 1,
+        backgroundColor: '#00ccff',
         borderRadius: 4,
         borderSkipped: false as const,
       },
     ],
   };
+
 
   const chartOptions = {
     responsive: true,
@@ -60,16 +59,17 @@ export default function DailyView({ dailyData, days, setDays }: Props) {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(255,255,255,0.03)', drawTicks: false },
-        ticks: { color: '#475569', font: { size: 10 as const }, maxTicksLimit: 8, maxRotation: 0 },
+        grid: { display: false },
+        ticks: { color: '#475569', font: { size: 10 as const, weight: '600' }, maxTicksLimit: 8 },
         border: { display: false },
       },
       y: {
-        grid: { color: 'rgba(255,255,255,0.04)', drawTicks: false },
-        ticks: { color: '#475569', font: { size: 10 as const } },
+        grid: { color: 'rgba(255,255,255,0.02)', drawTicks: false },
+        ticks: { color: '#475569', font: { size: 10 as const, weight: '600' } },
         border: { display: false },
       },
     },
+
   };
 
   // Show chronological days, filter out completely empty days but ALWAYS include the first 5 days (which includes today)
@@ -93,39 +93,40 @@ export default function DailyView({ dailyData, days, setDays }: Props) {
 
       <div style={{ display: 'flex', gap: '12px' }}>
         {[
-          { label: 'Total Visitas', value: sorted.reduce((s, d) => s + d.visits, 0).toLocaleString(), color: 'var(--accent-blue)' },
-          { label: 'Total Vendas', value: sorted.reduce((s, d) => s + d.conversions_count, 0), color: 'var(--accent-green)' },
-          { label: 'Líquido Total', value: `$${sorted.reduce((s, d) => s + d.net_commissions, 0).toFixed(2)}`, color: 'var(--accent-purple)' },
+          { label: 'Visitas', value: sorted.reduce((s, d) => s + d.visits, 0).toLocaleString(), color: 'var(--a-blue)' },
+          { label: 'Vendas', value: sorted.reduce((s, d) => s + d.conversions_count, 0), color: 'var(--p-neon)' },
+          { label: 'Líquido', value: `$${sorted.reduce((s, d) => s + d.net_commissions, 0).toFixed(2)}`, color: 'var(--s-purple)' },
         ].map(item => (
-          <div key={item.label} style={{
-            flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)',
-            borderRadius: '12px', padding: '12px', textAlign: 'center' as const,
+          <div key={item.label} className="glass" style={{
+            flex: 1, padding: '12px', textAlign: 'center' as const,
           }}>
-            <div style={{ fontSize: '16px', fontWeight: '700', color: item.color, fontFamily: 'Space Grotesk, sans-serif' }}>
+            <div className="font-space" style={{ fontSize: '16px', fontWeight: '700', color: item.color }}>
               {item.value}
             </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>{item.label}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-low)', textTransform: 'uppercase', fontWeight: '700', marginTop: '2px' }}>{item.label}</div>
           </div>
         ))}
       </div>
 
-      <div className="chart-card">
+
+      <div className="chart-card glass">
         <div className="section-header">
-          <span className="section-title">👁️ Visitas por Dia</span>
+          <span className="section-title text-gradient">👁️ Tráfego Diário</span>
         </div>
         <div className="chart-wrapper">
           <Bar data={visitsData} options={chartOptions} />
         </div>
       </div>
 
-      <div className="chart-card">
+
+      <div className="chart-card glass">
         <div className="section-header">
-          <span className="section-title">📋 Últimos Dias (Incluindo Hoje)</span>
+          <span className="section-title text-gradient">📋 Histórico Recente</span>
           <span className="section-badge">{recentDays.length} dias</span>
         </div>
         {recentDays.length === 0 ? (
-          <p style={{ textAlign: 'center' as const, color: 'var(--text-muted)', padding: '24px', fontSize: '13px' }}>
-            Nenhuma atividade no período selecionado
+          <p style={{ textAlign: 'center' as const, color: 'var(--text-low)', padding: '24px', fontSize: '13px' }}>
+            Nenhuma atividade no período
           </p>
         ) : (
           <div style={{ overflowX: 'auto' as const }}>
@@ -145,18 +146,18 @@ export default function DailyView({ dailyData, days, setDays }: Props) {
                       {new Date(day.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                     </td>
                     <td style={{ textAlign: 'right' as const }}>
-                      <div>{day.visits}</div>
+                      <div style={{ fontWeight: '600', color: 'var(--text-high)' }}>{day.visits}</div>
                       <div className="progress-bar-wrap">
-                        <div className="progress-bar" style={{ width: `${(day.visits / maxVisits) * 100}%`, background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)' }} />
+                        <div className="progress-bar" style={{ width: `${(day.visits / maxVisits) * 100}%`, background: 'var(--a-blue)' }} />
                       </div>
                     </td>
                     <td style={{ textAlign: 'right' as const }}>
-                      <div className={day.conversions_count > 0 ? 'highlight' : ''}>{day.conversions_count}</div>
+                      <div className={day.conversions_count > 0 ? 'highlight' : ''} style={{ fontWeight: '600' }}>{day.conversions_count}</div>
                       <div className="progress-bar-wrap">
-                        <div className="progress-bar" style={{ width: `${(day.conversions_count / maxConversions) * 100}%` }} />
+                        <div className="progress-bar" style={{ width: `${(day.conversions_count / maxConversions) * 100}%`, background: 'var(--p-neon)' }} />
                       </div>
                     </td>
-                    <td className="highlight" style={{ textAlign: 'right' as const, fontSize: '13px' }}>
+                    <td style={{ textAlign: 'right' as const, fontSize: '13px', fontWeight: '700', color: 'var(--s-purple)' }}>
                       ${day.net_commissions.toFixed(2)}
                     </td>
                   </tr>
@@ -166,6 +167,7 @@ export default function DailyView({ dailyData, days, setDays }: Props) {
           </div>
         )}
       </div>
+
     </div>
   );
 }

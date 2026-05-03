@@ -84,26 +84,30 @@ export default function Dashboard({ summary, dailyData, days, setDays, products,
       {
         label: 'Comissão Bruta',
         data: sorted.map(d => d.gross_commissions),
-        borderColor: 'rgba(0, 229, 176, 0.8)',
-        backgroundColor: 'rgba(0, 229, 176, 0.08)',
-        borderWidth: 2,
+        borderColor: '#00ffcc',
+        backgroundColor: 'rgba(0, 255, 204, 0.05)',
+        borderWidth: 3,
         fill: true,
         tension: 0.4,
         pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#00e5b0',
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#00ffcc',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
       },
       {
         label: 'Comissão Líquida',
         data: sorted.map(d => d.net_commissions),
-        borderColor: 'rgba(139, 92, 246, 0.8)',
-        backgroundColor: 'rgba(139, 92, 246, 0.05)',
-        borderWidth: 2,
+        borderColor: '#9d50ff',
+        backgroundColor: 'rgba(157, 80, 255, 0.05)',
+        borderWidth: 3,
         fill: true,
         tension: 0.4,
         pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: '#8b5cf6',
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: '#9d50ff',
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
       },
     ],
   };
@@ -115,19 +119,14 @@ export default function Dashboard({ summary, dailyData, days, setDays, products,
       {
         label: 'Conversões',
         data: sorted.map(d => d.conversions_count),
-        backgroundColor: (ctx: { chart: { ctx: CanvasRenderingContext2D } }) => {
-          const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 200);
-          gradient.addColorStop(0, 'rgba(0, 229, 176, 0.8)');
-          gradient.addColorStop(1, 'rgba(0, 229, 176, 0.1)');
-          return gradient;
-        },
-        borderColor: 'rgba(0, 229, 176, 0.5)',
-        borderWidth: 1,
-        borderRadius: 4,
+        backgroundColor: '#00ffcc',
+        hoverBackgroundColor: '#00ffcc',
+        borderRadius: 6,
         borderSkipped: false,
       },
     ],
   };
+
 
   const chartOptions = {
     responsive: true,
@@ -152,21 +151,21 @@ export default function Dashboard({ summary, dailyData, days, setDays, products,
     },
     scales: {
       x: {
-        grid: { color: 'rgba(255,255,255,0.03)', drawTicks: false },
+        grid: { display: false },
         ticks: {
           color: '#475569',
-          font: { size: 10 },
-          maxTicksLimit: 7,
-          maxRotation: 0,
+          font: { size: 10, weight: '600' },
+          maxTicksLimit: 6,
         },
         border: { display: false },
       },
       y: {
-        grid: { color: 'rgba(255,255,255,0.04)', drawTicks: false },
-        ticks: { color: '#475569', font: { size: 10 } },
+        grid: { color: 'rgba(255,255,255,0.02)', drawTicks: false },
+        ticks: { color: '#475569', font: { size: 10, weight: '600' } },
         border: { display: false },
       },
     },
+
   };
 
   // Today's data
@@ -212,15 +211,15 @@ export default function Dashboard({ summary, dailyData, days, setDays, products,
 
       {/* Today's Highlight */}
       {todayData && (
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(0,229,176,0.12), rgba(139,92,246,0.08))',
-          border: '1px solid rgba(0,229,176,0.25)',
-          borderRadius: '16px',
-          padding: '16px',
+        <div className="glass" style={{
+          background: 'linear-gradient(135deg, var(--p-dim), var(--s-dim))',
+          borderColor: 'var(--border-glow)',
+          padding: '20px',
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
+          gap: '16px',
         }}>
+
           <div style={{ fontSize: '28px' }}>📊</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
@@ -254,58 +253,57 @@ export default function Dashboard({ summary, dailyData, days, setDays, products,
 
       {/* KPI Grid */}
       <div className="kpi-grid">
-        <div className="kpi-card green fade-in-up">
+        <div className="kpi-card glass green fade-in-up">
           <div className="kpi-icon">💰</div>
           <div className="kpi-value">${filteredSummary.totalNetCommissions.toFixed(2)}</div>
-          <div className="kpi-label">Comissões Líquidas</div>
+          <div className="kpi-label">Líquido</div>
         </div>
-        <div className="kpi-card purple fade-in-up">
+        <div className="kpi-card glass purple fade-in-up">
           <div className="kpi-icon">🎯</div>
           <div className="kpi-value">{filteredSummary.totalConversions}</div>
-          <div className="kpi-label">Total de Vendas</div>
+          <div className="kpi-label">Vendas</div>
         </div>
-        <div className="kpi-card orange fade-in-up">
+        <div className="kpi-card glass fade-in-up">
           <div className="kpi-icon">👁️</div>
           <div className="kpi-value">{filteredSummary.totalVisits.toLocaleString()}</div>
           <div className="kpi-label">Visitas</div>
         </div>
-        <div className="kpi-card blue fade-in-up">
+        <div className="kpi-card glass fade-in-up">
           <div className="kpi-icon">📈</div>
-          <div className="kpi-value">{filteredSummary.conversionRate.toFixed(2)}%</div>
-          <div className="kpi-label">Taxa de Conv.</div>
+          <div className="kpi-value">{filteredSummary.conversionRate.toFixed(1)}%</div>
+          <div className="kpi-label">Conversão</div>
         </div>
       </div>
 
 
+
       {/* Avg Commission */}
       {summary.avgCommissionPerSale > 0 && (
-        <div style={{
-          background: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: '12px',
-          padding: '14px 16px',
+        <div className="glass" style={{
+          padding: '16px 20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>💎 Comissão média por venda</span>
-          <span style={{ fontSize: '16px', fontWeight: '700', color: 'var(--accent-green)', fontFamily: 'Space Grotesk, sans-serif' }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-mid)', fontWeight: '500' }}>💎 Ticket Médio</span>
+          <span className="font-space" style={{ fontSize: '18px', fontWeight: '700', color: 'var(--p-neon)' }}>
             ${summary.avgCommissionPerSale.toFixed(2)}
           </span>
         </div>
       )}
 
+
       {/* Commissions Chart */}
-      <div className="chart-card">
+      <div className="chart-card glass">
         <div className="section-header">
-          <span className="section-title">📉 Comissões</span>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--accent-green)' }}>
-              <span style={{ width: '8px', height: '2px', background: 'var(--accent-green)', display: 'inline-block', borderRadius: '1px' }} />
+          <span className="section-title text-gradient">📉 Performance Financeira</span>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--p-neon)' }}>
+              <span style={{ width: '8px', height: '8px', background: 'var(--p-neon)', borderRadius: '2px' }} />
               Bruta
             </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--accent-purple)' }}>
-              <span style={{ width: '8px', height: '2px', background: 'var(--accent-purple)', display: 'inline-block', borderRadius: '1px' }} />
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--s-purple)' }}>
+              <span style={{ width: '8px', height: '8px', background: 'var(--s-purple)', borderRadius: '2px' }} />
               Líquida
             </span>
           </div>
@@ -314,6 +312,7 @@ export default function Dashboard({ summary, dailyData, days, setDays, products,
           <Line data={commissionChartData} options={chartOptions} />
         </div>
       </div>
+
 
       {/* Conversions Chart */}
       <div className="chart-card">

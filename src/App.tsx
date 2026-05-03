@@ -183,18 +183,18 @@ export default function App() {
         <div className="header-brand">
           <div className="header-logo">💹</div>
           <div>
-            <div className="header-title">BuyGoods</div>
+            <div className="header-title font-space text-neon">BuyGoods</div>
             <div className="header-subtitle">
               {lastUpdated
-                ? `Atualizado ${lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
-                : 'Sincronizando...'}
+                ? `ON · ${lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+                : 'SINC...'}
             </div>
           </div>
         </div>
         
         {apis.length > 1 && (
           <select 
-            className="account-switcher"
+            className="account-switcher glass"
             value={activeApi?.id}
             onChange={(e) => {
               const api = apis.find(a => a.id === e.target.value);
@@ -206,6 +206,7 @@ export default function App() {
             ))}
           </select>
         )}
+
 
         <div className="header-actions">
 

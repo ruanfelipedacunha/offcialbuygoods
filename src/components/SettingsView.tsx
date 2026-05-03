@@ -75,9 +75,10 @@ export default function SettingsView() {
   return (
     <div className="settings-view fade-in">
       <div className="view-header">
-        <h1>Configurações do Sistema</h1>
-        <p>Gerencie suas conexões com BuyGoods e ClickCRM</p>
+        <h1 className="font-space text-gradient">Configurações</h1>
+        <p style={{ color: 'var(--text-low)', fontSize: '13px' }}>Gerencie suas conexões de API e produtos</p>
       </div>
+
 
       {message && (
         <div className={`alert alert-${message.type} slide-in-down`}>
@@ -132,15 +133,16 @@ export default function SettingsView() {
 
           <div className="list-container">
             {apis.map(api => (
-              <div key={api.id} className="list-item">
+              <div key={api.id} className="list-item glass" style={{ marginBottom: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div className="item-info">
-                  <span className="item-title">{api.label || 'Sem nome'}</span>
-                  <span className="item-subtitle">ID: {api.account_id}</span>
+                  <span className="item-title" style={{ fontWeight: '700', color: 'var(--text-high)', display: 'block' }}>{api.label || 'Sem nome'}</span>
+                  <span className="item-subtitle" style={{ fontSize: '11px', color: 'var(--text-low)' }}>ID: {api.account_id}</span>
                 </div>
-                <button onClick={() => handleDeleteApi(api.id)} className="btn-icon delete">🗑️</button>
+                <button onClick={() => handleDeleteApi(api.id)} className="btn-icon delete" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', opacity: 0.6 }}>🗑️</button>
               </div>
             ))}
           </div>
+
         </section>
 
         {/* Products Section */}
@@ -192,17 +194,18 @@ export default function SettingsView() {
 
           <div className="list-container">
             {products.map(p => (
-              <div key={p.id} className="list-item">
+              <div key={p.id} className="list-item glass" style={{ marginBottom: '8px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div className="item-info">
-                  <span className="item-title">{p.name}</span>
-                  <span className="item-subtitle">
+                  <span className="item-title" style={{ fontWeight: '700', color: 'var(--text-high)', display: 'block' }}>{p.name}</span>
+                  <span className="item-subtitle" style={{ fontSize: '11px', color: 'var(--text-low)' }}>
                     {apis.find(a => a.id === p.api_settings_id)?.label || 'Conta desconhecida'}
                   </span>
                 </div>
-                <button onClick={() => handleDeleteProduct(p.id)} className="btn-icon delete">🗑️</button>
+                <button onClick={() => handleDeleteProduct(p.id)} className="btn-icon delete" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', opacity: 0.6 }}>🗑️</button>
               </div>
             ))}
           </div>
+
         </section>
       </div>
 
