@@ -12,142 +12,86 @@ import SettingsView from './components/SettingsView';
 import { supabase } from './lib/supabase';
 import { ApiSettings, Product } from './types';
 
-
-
-
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 const TABS = [
-  { id: 'dashboard', label: 'Início', icon: '🏠' },
-  { id: 'daily', label: 'Diário', icon: '📅' },
-  { id: 'hourly', label: 'Horas', icon: '⏰' },
-  { id: 'subids', label: 'SubIDs', icon: '🔖' },
-  { id: 'notifications', label: 'Alertas', icon: '🔔' },
+  { id: 'dashboard', label: 'Dashboard', icon: '📊' },
+  { id: 'daily', label: 'Relatório Diário', icon: '📅' },
+  { id: 'hourly', label: 'Por Hora', icon: '⏰' },
+  { id: 'subids', label: 'Campanhas', icon: '🎯' },
+  { id: 'notifications', label: 'Notificações', icon: '🔔' },
   { id: 'settings', label: 'Ajustes', icon: '⚙️' },
 ] as const;
 
-
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-  const [days, setDays] = useState(30);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
+  const [days, setDays] = useState(7);
+  const [summary, setSummary] = useState<any>(null);
   const [dailyData, setDailyData] = useState<DayData[]>([]);
-  const [hourlyData, setHourlyData] = useState<HourData[]>([]);
   const [subIdData, setSubIdData] = useState<SubIdData[]>([]);
   const [subId2Data, setSubId2Data] = useState<SubId2Data[]>([]);
   const [activeApi, setActiveApi] = useState<ApiSettings | null>(null);
   const [apis, setApis] = useState<ApiSettings[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-
-
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const fetchAll = useCallback(async (showLoader = false) => {
-    if (showLoader) setLoading(true);
-    else setIsRefreshing(true);
-    setError(null);
-
+  const fetchData = useCallback(async (forceRefresh = false) => {
+    if (!activeApi) return;
+    
+    setIsRefreshing(true);
     try {
-      // 1. Fetch settings if not loaded
-      let currentApi = activeApi;
-      if (!currentApi) {
-        const { data: apiData } = await supabase.from('api_settings').select('*');
-        const { data: productData } = await supabase.from('products').select('*');
-        
-        if (apiData && apiData.length > 0) {
-          setApis(apiData);
-          setProducts(productData || []);
-          currentApi = apiData[0];
-          setActiveApi(apiData[0]);
-        }
-      }
-
-
-      if (!currentApi) {
-        setLoading(false);
-        setIsRefreshing(false);
-        return; // Wait for user to configure API in settings
-      }
-
-      const daily = await fetchDailyData(currentApi.account_id, currentApi.token, days);
-      const hourly = await fetchHourlyData(currentApi.account_id, currentApi.token, Math.min(days, 30));
-      const sub1 = await fetchBySubId(currentApi.account_id, currentApi.token, days);
-      const sub2 = await fetchBySubId2(currentApi.account_id, currentApi.token, days);
+      const { account_id, token } = activeApi;
+      const [daily, sub1, sub2] = await Promise.all([
+        fetchDailyData(account_id, token, days),
+        fetchBySubId(account_id, token, days),
+        fetchBySubId2(account_id, token, days),
+      ]);
 
       setDailyData(daily);
-      setHourlyData(hourly);
       setSubIdData(sub1);
       setSubId2Data(sub2);
+      setSummary(computeSummary(daily, sub1));
       setLastUpdated(new Date());
 
-      const summary = computeSummary(daily);
-      checkForNewSales(summary.totalConversions, summary.totalNetCommissions, summary.totalVisits);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao carregar dados';
-      setError(msg);
+      // Only check notifications on background refresh or force
+      if (forceRefresh) {
+        checkForNewSales(activeApi.account_id, activeApi.token, daily);
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [days, activeApi]);
-
+  }, [activeApi, days]);
 
   useEffect(() => {
-    fetchAll(true);
-  }, [fetchAll]);
+    async function init() {
+      const { data: apiData } = await supabase.from('api_settings').select('*');
+      const { data: productData } = await supabase.from('products').select('*');
+      
+      if (apiData && apiData.length > 0) {
+        setApis(apiData);
+        setProducts(productData || []);
+        setActiveApi(apiData[0]);
+      } else {
+        setLoading(false);
+        setActiveTab('settings');
+      }
+    }
+    init();
+  }, []);
 
-  // Auto refresh
   useEffect(() => {
-    intervalRef.current = setInterval(() => fetchAll(false), REFRESH_INTERVAL);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [fetchAll]);
-
-  const summary = computeSummary(dailyData);
+    if (activeApi) fetchData(true);
+  }, [activeApi, days, fetchData]);
 
   const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="loading-overlay">
-          <div className="loader" />
-          <span className="loading-text">Carregando seus dados...</span>
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="error-card fade-in-up">
-          <h3>⚠️ Erro de Conexão</h3>
-          <p>{error}</p>
-          <button className="btn-primary" onClick={() => fetchAll(true)} style={{ marginTop: '16px' }}>
-            Tentar Novamente
-          </button>
-        </div>
-      );
-    }
-
-    if (!activeApi && !loading) {
-      return (
-        <div className="error-card fade-in-up" style={{ background: 'var(--bg-card)', borderColor: 'var(--accent-green-glow)' }}>
-          <div style={{ fontSize: '40px', marginBottom: '16px' }}>🚀</div>
-          <h3 style={{ color: 'var(--accent-green)' }}>Bem-vindo ao BuyGoods Monitor</h3>
-          <p>Para começar, configure sua conta de API nas definições.</p>
-          <button className="btn-primary" onClick={() => setActiveTab('settings')} style={{ marginTop: '16px' }}>
-            Configurar API
-          </button>
-        </div>
-      );
-    }
+    if (loading) return <div className="loader-container"><div className="loader"></div></div>;
 
     switch (activeTab) {
-
       case 'dashboard':
         return (
           <Dashboard 
@@ -159,11 +103,10 @@ export default function App() {
             subIdData={subIdData}
           />
         );
-
       case 'daily':
         return <DailyView dailyData={dailyData} days={days} setDays={setDays} />;
       case 'hourly':
-        return <HourlyView hourlyData={hourlyData} />;
+        return <HourlyView accountId={activeApi?.account_id || ''} token={activeApi?.token || ''} />;
       case 'subids':
         return <SubIdsView subIdData={subIdData} subId2Data={subId2Data} />;
       case 'notifications':
@@ -172,78 +115,86 @@ export default function App() {
         return <SettingsView />;
       default:
         return null;
-
     }
   };
 
   return (
-    <div className="app">
-      {/* Header */}
-      <header className="header">
-        <div className="header-brand">
-          <div className="header-logo">💹</div>
-          <div>
-            <div className="header-title font-space text-neon">BuyGoods</div>
-            <div className="header-subtitle">
-              {lastUpdated
-                ? `ON · ${lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
-                : 'SINC...'}
+    <div className="app-container">
+      {/* Desktop Sidebar */}
+      <aside className="sidebar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '40px' }}>
+          <div style={{ width: '32px', height: '32px', background: 'var(--bg-accent)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>BG</div>
+          <h2 style={{ fontSize: '18px' }}>BuyGoods <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>Monitor</span></h2>
+        </div>
+
+        <nav className="nav-list">
+          {TABS.map(tab => (
+            <div 
+              key={tab.id} 
+              className={`nav-link ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
             </div>
+          ))}
+        </nav>
+
+        <div style={{ marginTop: 'auto', padding: '20px', background: '#f8fafc', borderRadius: '12px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+          <div style={{ fontWeight: '700', marginBottom: '4px' }}>Status do Sistema</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div style={{ width: '6px', height: '6px', background: '#22c55e', borderRadius: '50%' }}></div>
+            {lastUpdated ? `Atualizado ${lastUpdated.toLocaleTimeString()}` : 'Conectando...'}
           </div>
         </div>
-        
-        {apis.length > 1 && (
-          <select 
-            className="account-switcher glass"
-            value={activeApi?.id}
-            onChange={(e) => {
-              const api = apis.find(a => a.id === e.target.value);
-              if (api) setActiveApi(api);
-            }}
-          >
-            {apis.map(api => (
-              <option key={api.id} value={api.id}>{api.label}</option>
-            ))}
-          </select>
-        )}
+      </aside>
 
-
-        <div className="header-actions">
-
-          <div className="live-badge">
-            <div className="live-dot" />
-            LIVE
+      {/* Main Content Area */}
+      <main className="main-content">
+        <header className="top-bar">
+          <div>
+            <h1 style={{ fontSize: '24px' }}>{TABS.find(t => t.id === activeTab)?.label}</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>Dashboard de performance em tempo real</p>
           </div>
-          <button
-            className={`refresh-btn ${isRefreshing ? 'spinning' : ''}`}
-            onClick={() => fetchAll(false)}
-            title="Atualizar dados"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M23 4v6h-6" />
-              <path d="M1 20v-6h6" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-          </button>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="main">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {apis.length > 0 && (
+              <select 
+                className="account-selector"
+                value={activeApi?.id}
+                onChange={(e) => setActiveApi(apis.find(a => a.id === e.target.value) || null)}
+              >
+                {apis.map(api => (
+                  <option key={api.id} value={api.id}>{api.label}</option>
+                ))}
+              </select>
+            )}
+            <button 
+              className="refresh-btn" 
+              onClick={() => fetchData(true)}
+              disabled={isRefreshing}
+              style={{ background: 'none', border: '1px solid var(--border)', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
+            >
+              {isRefreshing ? '⌛' : '🔄'}
+            </button>
+          </div>
+        </header>
+
         {renderContent()}
       </main>
 
-      {/* Bottom Navigation */}
+      {/* Mobile Bottom Navigation */}
       <nav className="bottom-nav">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
+        {TABS.map(tab => (
+          <div 
+            key={tab.id} 
             className={`nav-item ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id as ActiveTab)}
+            onClick={() => setActiveTab(tab.id)}
+            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
           >
-            <span className="nav-icon">{tab.icon}</span>
-            <span className="nav-label">{tab.label}</span>
-          </button>
+            <span style={{ fontSize: '20px' }}>{tab.icon}</span>
+            <span style={{ fontSize: '10px', fontWeight: '600', color: activeTab === tab.id ? 'var(--bg-accent)' : 'var(--text-muted)' }}>{tab.label}</span>
+          </div>
         ))}
       </nav>
     </div>

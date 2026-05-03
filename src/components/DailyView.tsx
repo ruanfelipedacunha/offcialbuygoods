@@ -23,151 +23,85 @@ const DAY_OPTIONS = [7, 14, 30, 60];
 
 export default function DailyView({ dailyData, days, setDays }: Props) {
   const sorted = [...dailyData].sort((a, b) => a.date.localeCompare(b.date));
-
   const labels = sorted.map(d => {
     const [, m, day] = d.date.split('-');
     return `${day}/${m}`;
   });
 
-  const visitsData = {
-    labels,
-    datasets: [
-      {
-        label: 'Visitas',
-        data: sorted.map(d => d.visits),
-        backgroundColor: '#00ccff',
-        borderRadius: 4,
-        borderSkipped: false as const,
-      },
-    ],
-  };
-
-
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: 'rgba(15, 15, 30, 0.95)',
-        borderColor: 'rgba(59, 130, 246, 0.3)',
-        borderWidth: 1,
-        titleColor: '#f1f5f9',
-        bodyColor: '#94a3b8',
-        padding: 10,
-      },
-    },
+    plugins: { legend: { display: false } },
     scales: {
-      x: {
-        grid: { display: false },
-        ticks: { color: '#475569', font: { size: 10 as const, weight: '600' }, maxTicksLimit: 8 },
-        border: { display: false },
-      },
-      y: {
-        grid: { color: 'rgba(255,255,255,0.02)', drawTicks: false },
-        ticks: { color: '#475569', font: { size: 10 as const, weight: '600' } },
-        border: { display: false },
-      },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+      y: { grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
     },
-
   };
 
-  // Show chronological days, filter out completely empty days but ALWAYS include the first 5 days (which includes today)
-  const recentDays = [...sorted]
-    .sort((a, b) => b.date.localeCompare(a.date)) // Newest first
-    .filter((d, index) => index < 5 || d.conversions_count > 0 || d.visits > 0)
-    .slice(0, 15); // Show last 15 days max
+  const visitsData = {
+    labels,
+    datasets: [{
+      label: 'Visitas',
+      data: sorted.map(d => d.visits),
+      backgroundColor: '#6366f1',
+      borderRadius: 4,
+    }],
+  };
 
-  const maxVisits = Math.max(...recentDays.map(d => d.visits), 1);
-  const maxConversions = Math.max(...recentDays.map(d => d.conversions_count), 1);
+  const recentDays = [...sorted]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 15);
 
   return (
-    <div className="fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div className="date-range">
         {DAY_OPTIONS.map(d => (
           <button key={d} className={`date-btn ${days === d ? 'active' : ''}`} onClick={() => setDays(d)}>
-            {d === 7 ? '7 dias' : d === 14 ? '14 dias' : d === 30 ? '30 dias' : '60 dias'}
+            {d} dias
           </button>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: '12px' }}>
-        {[
-          { label: 'Visitas', value: sorted.reduce((s, d) => s + d.visits, 0).toLocaleString(), color: 'var(--a-blue)' },
-          { label: 'Vendas', value: sorted.reduce((s, d) => s + d.conversions_count, 0), color: 'var(--p-neon)' },
-          { label: 'Líquido', value: `$${sorted.reduce((s, d) => s + d.net_commissions, 0).toFixed(2)}`, color: 'var(--s-purple)' },
-        ].map(item => (
-          <div key={item.label} className="glass" style={{
-            flex: 1, padding: '12px', textAlign: 'center' as const,
-          }}>
-            <div className="font-space" style={{ fontSize: '16px', fontWeight: '700', color: item.color }}>
-              {item.value}
-            </div>
-            <div style={{ fontSize: '10px', color: 'var(--text-low)', textTransform: 'uppercase', fontWeight: '700', marginTop: '2px' }}>{item.label}</div>
-          </div>
-        ))}
-      </div>
-
-
-      <div className="chart-card glass">
-        <div className="section-header">
-          <span className="section-title text-gradient">👁️ Tráfego Diário</span>
-        </div>
-        <div className="chart-wrapper">
+      <div className="card">
+        <h2 style={{ marginBottom: '20px' }}>👁️ Volume de Tráfego Diário</h2>
+        <div style={{ height: '240px' }}>
           <Bar data={visitsData} options={chartOptions} />
         </div>
       </div>
 
-
-      <div className="chart-card glass">
-        <div className="section-header">
-          <span className="section-title text-gradient">📋 Histórico Recente</span>
-          <span className="section-badge">{recentDays.length} dias</span>
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)' }}>
+          <h2 style={{ fontSize: '16px' }}>📋 Histórico de Performance</h2>
         </div>
-        {recentDays.length === 0 ? (
-          <p style={{ textAlign: 'center' as const, color: 'var(--text-low)', padding: '24px', fontSize: '13px' }}>
-            Nenhuma atividade no período
-          </p>
-        ) : (
-          <div style={{ overflowX: 'auto' as const }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th style={{ textAlign: 'right' as const }}>Visitas</th>
-                  <th style={{ textAlign: 'right' as const }}>Vendas</th>
-                  <th style={{ textAlign: 'right' as const }}>Líquido</th>
+        <div style={{ overflowX: 'auto' }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Visitas</th>
+                <th>Vendas</th>
+                <th style={{ textAlign: 'right' }}>Líquido</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentDays.map(day => (
+                <tr key={day.date}>
+                  <td style={{ fontWeight: '600' }}>{new Date(day.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</td>
+                  <td>{day.visits.toLocaleString()}</td>
+                  <td>
+                    <span className={`badge ${day.conversions_count > 0 ? 'badge-success' : ''}`}>
+                      {day.conversions_count}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'right', fontWeight: '700', color: 'var(--bg-accent)' }}>
+                    ${day.net_commissions.toFixed(2)}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {recentDays.map(day => (
-                  <tr key={day.date}>
-                    <td>
-                      {new Date(day.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                    </td>
-                    <td style={{ textAlign: 'right' as const }}>
-                      <div style={{ fontWeight: '600', color: 'var(--text-high)' }}>{day.visits}</div>
-                      <div className="progress-bar-wrap">
-                        <div className="progress-bar" style={{ width: `${(day.visits / maxVisits) * 100}%`, background: 'var(--a-blue)' }} />
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'right' as const }}>
-                      <div className={day.conversions_count > 0 ? 'highlight' : ''} style={{ fontWeight: '600' }}>{day.conversions_count}</div>
-                      <div className="progress-bar-wrap">
-                        <div className="progress-bar" style={{ width: `${(day.conversions_count / maxConversions) * 100}%`, background: 'var(--p-neon)' }} />
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'right' as const, fontSize: '13px', fontWeight: '700', color: 'var(--s-purple)' }}>
-                      ${day.net_commissions.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-
     </div>
   );
 }

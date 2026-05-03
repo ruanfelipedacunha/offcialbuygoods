@@ -15,7 +15,6 @@ import { Line, Bar } from 'react-chartjs-2';
 import type { DayData, SalesSummary, Product, SubIdData } from '../types';
 import { useState, useMemo } from 'react';
 
-
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -37,7 +36,6 @@ interface Props {
   subIdData: SubIdData[];
 }
 
-
 const DAY_OPTIONS = [7, 14, 30, 60];
 
 export default function Dashboard({ summary, dailyData, days, setDays, products, subIdData }: Props) {
@@ -47,11 +45,8 @@ export default function Dashboard({ summary, dailyData, days, setDays, products,
     products.find(p => p.id === activeProductId), 
   [products, activeProductId]);
 
-  // If a product is selected, we try to find its subid match
   const filteredSummary = useMemo(() => {
     if (!activeProduct) return summary;
-    
-    // Search for a SubID that matches the product name or ID
     const match = subIdData.find(s => 
       s.subid.toLowerCase() === activeProduct.name.toLowerCase() ||
       (activeProduct.buygoods_id && s.subid === activeProduct.buygoods_id)
@@ -67,261 +62,144 @@ export default function Dashboard({ summary, dailyData, days, setDays, products,
         avgCommissionPerSale: match.conversions_count > 0 ? match.net_commissions / match.conversions_count : 0,
       };
     }
-    return { ...summary, isGeneral: true }; // Fallback to general if no subid match
+    return { ...summary };
   }, [summary, activeProduct, subIdData]);
 
   const sorted = [...dailyData].sort((a, b) => a.date.localeCompare(b.date));
-
   const labels = sorted.map(d => {
     const [, m, day] = d.date.split('-');
     return `${day}/${m}`;
   });
-
-  // Commission chart data
-  const commissionChartData = {
-    labels,
-    datasets: [
-      {
-        label: 'Comissão Bruta',
-        data: sorted.map(d => d.gross_commissions),
-        borderColor: '#00ffcc',
-        backgroundColor: 'rgba(0, 255, 204, 0.05)',
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 6,
-        pointHoverBackgroundColor: '#00ffcc',
-        pointHoverBorderColor: '#fff',
-        pointHoverBorderWidth: 2,
-      },
-      {
-        label: 'Comissão Líquida',
-        data: sorted.map(d => d.net_commissions),
-        borderColor: '#9d50ff',
-        backgroundColor: 'rgba(157, 80, 255, 0.05)',
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 6,
-        pointHoverBackgroundColor: '#9d50ff',
-        pointHoverBorderColor: '#fff',
-        pointHoverBorderWidth: 2,
-      },
-    ],
-  };
-
-  // Conversions chart data
-  const conversionsChartData = {
-    labels,
-    datasets: [
-      {
-        label: 'Conversões',
-        data: sorted.map(d => d.conversions_count),
-        backgroundColor: '#00ffcc',
-        hoverBackgroundColor: '#00ffcc',
-        borderRadius: 6,
-        borderSkipped: false,
-      },
-    ],
-  };
-
 
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     interaction: { intersect: false, mode: 'index' as const },
     plugins: {
-      legend: {
-        display: false,
-      },
+      legend: { display: false },
       tooltip: {
-        backgroundColor: 'rgba(15, 15, 30, 0.95)',
-        borderColor: 'rgba(0, 229, 176, 0.3)',
+        backgroundColor: '#fff',
+        titleColor: '#0f172a',
+        bodyColor: '#475569',
+        borderColor: '#e2e8f0',
         borderWidth: 1,
-        titleColor: '#f1f5f9',
-        bodyColor: '#94a3b8',
-        padding: 10,
-        callbacks: {
-          label: (ctx: any) =>
-            ` ${ctx.dataset.label}: ${ctx.dataset.label?.includes('Comissão') ? '$' : ''}${ctx.parsed.y.toFixed(2)}`,
-        },
+        padding: 12,
+        boxPadding: 4,
+        usePointStyle: true,
       },
     },
     scales: {
-      x: {
-        grid: { display: false },
-        ticks: {
-          color: '#475569',
-          font: { size: 10, weight: '600' },
-          maxTicksLimit: 6,
-        },
-        border: { display: false },
-      },
-      y: {
-        grid: { color: 'rgba(255,255,255,0.02)', drawTicks: false },
-        ticks: { color: '#475569', font: { size: 10, weight: '600' } },
-        border: { display: false },
-      },
+      x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+      y: { grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
     },
-
   };
 
-  // Today's data
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayData = dailyData.find(d => d.date === todayStr);
+  const commissionChartData = {
+    labels,
+    datasets: [
+      {
+        label: 'Líquido',
+        data: sorted.map(d => d.net_commissions),
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+      },
+    ],
+  };
+
+  const conversionsChartData = {
+    labels,
+    datasets: [
+      {
+        label: 'Vendas',
+        data: sorted.map(d => d.conversions_count),
+        backgroundColor: '#6366f1',
+        borderRadius: 4,
+      },
+    ],
+  };
 
   return (
-    <div className="fade-in-up" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Date Range Filter */}
-      <div className="date-range">
-        {DAY_OPTIONS.map(d => (
-          <button
-            key={d}
-            className={`date-btn ${days === d ? 'active' : ''}`}
-            onClick={() => setDays(d)}
-          >
-            {d === 7 ? '7 dias' : d === 14 ? '14 dias' : d === 30 ? '30 dias' : '60 dias'}
-          </button>
-        ))}
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      {/* Date & Product Filters */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div className="date-range">
+          {DAY_OPTIONS.map(d => (
+            <button key={d} className={`date-btn ${days === d ? 'active' : ''}`} onClick={() => setDays(d)}>
+              {d} dias
+            </button>
+          ))}
+        </div>
 
-      {/* Product Filter */}
-      {products.length > 0 && (
-        <div className="product-filter glass" style={{ padding: '8px', borderRadius: '12px', display: 'flex', gap: '8px', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <button 
-            className={`date-btn ${!activeProductId ? 'active' : ''}`}
+            className={`date-btn ${!activeProductId ? 'active' : ''}`} 
             onClick={() => setActiveProductId(null)}
           >
-            Todos Produtos
+            Todos
           </button>
           {products.map(p => (
             <button 
-              key={p.id}
-              className={`date-btn ${activeProductId === p.id ? 'active' : ''}`}
+              key={p.id} 
+              className={`date-btn ${activeProductId === p.id ? 'active' : ''}`} 
               onClick={() => setActiveProductId(p.id)}
             >
               {p.name}
             </button>
           ))}
         </div>
-      )}
-
-
-      {/* Today's Highlight */}
-      {todayData && (
-        <div className="glass" style={{
-          background: 'linear-gradient(135deg, var(--p-dim), var(--s-dim))',
-          borderColor: 'var(--border-glow)',
-          padding: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
-        }}>
-
-          <div style={{ fontSize: '28px' }}>📊</div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>
-              Hoje · {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-            </div>
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--accent-green)', fontFamily: 'Space Grotesk, sans-serif' }}>
-                  {todayData.conversions_count}
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Vendas</div>
-              </div>
-              <div style={{ width: '1px', height: '30px', background: 'var(--border)' }} />
-              <div>
-                <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--accent-purple)', fontFamily: 'Space Grotesk, sans-serif' }}>
-                  ${todayData.net_commissions.toFixed(2)}
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Comissões</div>
-              </div>
-              <div style={{ width: '1px', height: '30px', background: 'var(--border)' }} />
-              <div>
-                <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--accent-blue)', fontFamily: 'Space Grotesk, sans-serif' }}>
-                  {todayData.visits}
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Visitas</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* KPI Grid */}
       <div className="kpi-grid">
-        <div className="kpi-card glass green fade-in-up">
-          <div className="kpi-icon">💰</div>
-          <div className="kpi-value">${filteredSummary.totalNetCommissions.toFixed(2)}</div>
-          <div className="kpi-label">Líquido</div>
-        </div>
-        <div className="kpi-card glass purple fade-in-up">
-          <div className="kpi-icon">🎯</div>
-          <div className="kpi-value">{filteredSummary.totalConversions}</div>
-          <div className="kpi-label">Vendas</div>
-        </div>
-        <div className="kpi-card glass fade-in-up">
-          <div className="kpi-icon">👁️</div>
-          <div className="kpi-value">{filteredSummary.totalVisits.toLocaleString()}</div>
-          <div className="kpi-label">Visitas</div>
-        </div>
-        <div className="kpi-card glass fade-in-up">
-          <div className="kpi-icon">📈</div>
-          <div className="kpi-value">{filteredSummary.conversionRate.toFixed(1)}%</div>
-          <div className="kpi-label">Conversão</div>
-        </div>
-      </div>
-
-
-
-      {/* Avg Commission */}
-      {summary.avgCommissionPerSale > 0 && (
-        <div className="glass" style={{
-          padding: '16px 20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <span style={{ fontSize: '13px', color: 'var(--text-mid)', fontWeight: '500' }}>💎 Ticket Médio</span>
-          <span className="font-space" style={{ fontSize: '18px', fontWeight: '700', color: 'var(--p-neon)' }}>
-            ${summary.avgCommissionPerSale.toFixed(2)}
-          </span>
-        </div>
-      )}
-
-
-      {/* Commissions Chart */}
-      <div className="chart-card glass">
-        <div className="section-header">
-          <span className="section-title text-gradient">📉 Performance Financeira</span>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--p-neon)' }}>
-              <span style={{ width: '8px', height: '8px', background: 'var(--p-neon)', borderRadius: '2px' }} />
-              Bruta
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--s-purple)' }}>
-              <span style={{ width: '8px', height: '8px', background: 'var(--s-purple)', borderRadius: '2px' }} />
-              Líquida
-            </span>
+        <div className="card kpi-item">
+          <div className="kpi-label">Comissão Líquida</div>
+          <div className="kpi-value" style={{ color: 'var(--bg-accent)' }}>
+            ${filteredSummary.totalNetCommissions.toFixed(2)}
           </div>
         </div>
-        <div className="chart-wrapper">
-          <Line data={commissionChartData} options={chartOptions} />
+        <div className="card kpi-item">
+          <div className="kpi-label">Total de Vendas</div>
+          <div className="kpi-value">{filteredSummary.totalConversions}</div>
+        </div>
+        <div className="card kpi-item">
+          <div className="kpi-label">Visitas Únicas</div>
+          <div className="kpi-value">{filteredSummary.totalVisits.toLocaleString()}</div>
+        </div>
+        <div className="card kpi-item">
+          <div className="kpi-label">Taxa de Conversão</div>
+          <div className="kpi-value" style={{ color: '#10b981' }}>{filteredSummary.conversionRate.toFixed(1)}%</div>
         </div>
       </div>
 
-
-      {/* Conversions Chart */}
-      <div className="chart-card">
-        <div className="section-header">
-          <span className="section-title">🎯 Conversões por Dia</span>
-          <span className="section-badge">{days}d</span>
+      {/* Charts Section */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+        <div className="card">
+          <h2 style={{ marginBottom: '20px' }}>Tendência de Comissões</h2>
+          <div style={{ height: '260px' }}>
+            <Line data={commissionChartData} options={chartOptions} />
+          </div>
         </div>
-        <div className="chart-wrapper">
-          <Bar data={conversionsChartData} options={chartOptions} />
+        <div className="card">
+          <h2 style={{ marginBottom: '20px' }}>Vendas Diárias</h2>
+          <div style={{ height: '260px' }}>
+            <Bar data={conversionsChartData} options={chartOptions} />
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Stats */}
+      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div className="kpi-label">Ticket Médio</div>
+          <div style={{ fontSize: '20px', fontWeight: '700' }}>${summary.avgCommissionPerSale.toFixed(2)}</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div className="kpi-label">Período</div>
+          <div style={{ fontSize: '14px', fontWeight: '600' }}>Últimos {days} dias</div>
         </div>
       </div>
     </div>
