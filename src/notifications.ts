@@ -20,16 +20,20 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 
 export async function subscribeToPush(): Promise<PushSubscription | null> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    console.warn('Push notifications not supported');
+    alert('Seu navegador não suporta notificações Push.');
     return null;
   }
   
   try {
+    alert('Aguardando Service Worker...');
     const registration = await navigator.serviceWorker.ready;
+    alert('Service Worker pronto! Buscando assinatura existente...');
+    
     const existing = await registration.pushManager.getSubscription();
     
     let subscription = existing;
     if (!subscription) {
+      alert('Criando nova assinatura (pode pedir permissão agora)...');
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) as any,
@@ -37,7 +41,7 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
     }
 
     if (subscription) {
-      // Save or update subscription in Supabase
+      alert('Inscrição obtida! Salvando no Supabase...');
       const { error } = await supabase
         .from('monitor_config')
         .upsert({
@@ -47,16 +51,17 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
         }, { onConflict: 'endpoint' });
       
       if (error) {
-        console.error('Error saving subscription to Supabase:', error);
-        alert('Erro ao salvar no Supabase: ' + error.message);
+        alert('❌ Erro no Supabase: ' + error.message);
       } else {
-        alert('✅ Sucesso! Seu aparelho foi registrado para notificações 24h.');
+        alert('✅ SUCESSO! Monitoramento ativado.');
       }
+    } else {
+      alert('⚠️ Nenhuma assinatura foi criada.');
     }
 
     return subscription;
   } catch (err) {
-    console.error('Failed to subscribe to push:', err);
+    alert('💥 ERRO FATAL: ' + (err instanceof Error ? err.message : String(err)));
     return null;
   }
 }

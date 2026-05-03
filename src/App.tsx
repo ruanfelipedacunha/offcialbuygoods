@@ -8,6 +8,12 @@ import DailyView from './components/DailyView';
 import HourlyView from './components/HourlyView';
 import SubIdsView from './components/SubIdsView';
 import NotificationsView from './components/NotificationsView';
+import SettingsView from './components/SettingsView';
+import { supabase } from './lib/supabase';
+import { ApiSettings, Product } from './types';
+
+
+
 
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
@@ -17,7 +23,9 @@ const TABS = [
   { id: 'hourly', label: 'Horas', icon: '⏰' },
   { id: 'subids', label: 'SubIDs', icon: '🔖' },
   { id: 'notifications', label: 'Alertas', icon: '🔔' },
+  { id: 'settings', label: 'Ajustes', icon: '⚙️' },
 ] as const;
+
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -31,6 +39,11 @@ export default function App() {
   const [hourlyData, setHourlyData] = useState<HourData[]>([]);
   const [subIdData, setSubIdData] = useState<SubIdData[]>([]);
   const [subId2Data, setSubId2Data] = useState<SubId2Data[]>([]);
+  const [activeApi, setActiveApi] = useState<ApiSettings | null>(null);
+  const [apis, setApis] = useState<ApiSettings[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+
+
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -40,10 +53,31 @@ export default function App() {
     setError(null);
 
     try {
-      const daily = await fetchDailyData(days);
-      const hourly = await fetchHourlyData(Math.min(days, 30));
-      const sub1 = await fetchBySubId(days);
-      const sub2 = await fetchBySubId2(days);
+      // 1. Fetch settings if not loaded
+      let currentApi = activeApi;
+      if (!currentApi) {
+        const { data: apiData } = await supabase.from('api_settings').select('*');
+        const { data: productData } = await supabase.from('products').select('*');
+        
+        if (apiData && apiData.length > 0) {
+          setApis(apiData);
+          setProducts(productData || []);
+          currentApi = apiData[0];
+          setActiveApi(apiData[0]);
+        }
+      }
+
+
+      if (!currentApi) {
+        setLoading(false);
+        setIsRefreshing(false);
+        return; // Wait for user to configure API in settings
+      }
+
+      const daily = await fetchDailyData(currentApi.account_id, currentApi.token, days);
+      const hourly = await fetchHourlyData(currentApi.account_id, currentApi.token, Math.min(days, 30));
+      const sub1 = await fetchBySubId(currentApi.account_id, currentApi.token, days);
+      const sub2 = await fetchBySubId2(currentApi.account_id, currentApi.token, days);
 
       setDailyData(daily);
       setHourlyData(hourly);
@@ -60,7 +94,8 @@ export default function App() {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [days]);
+  }, [days, activeApi]);
+
 
   useEffect(() => {
     fetchAll(true);
@@ -98,9 +133,33 @@ export default function App() {
       );
     }
 
+    if (!activeApi && !loading) {
+      return (
+        <div className="error-card fade-in-up" style={{ background: 'var(--bg-card)', borderColor: 'var(--accent-green-glow)' }}>
+          <div style={{ fontSize: '40px', marginBottom: '16px' }}>🚀</div>
+          <h3 style={{ color: 'var(--accent-green)' }}>Bem-vindo ao BuyGoods Monitor</h3>
+          <p>Para começar, configure sua conta de API nas definições.</p>
+          <button className="btn-primary" onClick={() => setActiveTab('settings')} style={{ marginTop: '16px' }}>
+            Configurar API
+          </button>
+        </div>
+      );
+    }
+
     switch (activeTab) {
+
       case 'dashboard':
-        return <Dashboard summary={summary} dailyData={dailyData} days={days} setDays={setDays} />;
+        return (
+          <Dashboard 
+            summary={summary} 
+            dailyData={dailyData} 
+            days={days} 
+            setDays={setDays} 
+            products={products.filter(p => p.api_settings_id === activeApi?.id)}
+            subIdData={subIdData}
+          />
+        );
+
       case 'daily':
         return <DailyView dailyData={dailyData} days={days} setDays={setDays} />;
       case 'hourly':
@@ -109,8 +168,11 @@ export default function App() {
         return <SubIdsView subIdData={subIdData} subId2Data={subId2Data} />;
       case 'notifications':
         return <NotificationsView />;
+      case 'settings':
+        return <SettingsView />;
       default:
         return null;
+
     }
   };
 
@@ -129,7 +191,24 @@ export default function App() {
             </div>
           </div>
         </div>
+        
+        {apis.length > 1 && (
+          <select 
+            className="account-switcher"
+            value={activeApi?.id}
+            onChange={(e) => {
+              const api = apis.find(a => a.id === e.target.value);
+              if (api) setActiveApi(api);
+            }}
+          >
+            {apis.map(api => (
+              <option key={api.id} value={api.id}>{api.label}</option>
+            ))}
+          </select>
+        )}
+
         <div className="header-actions">
+
           <div className="live-badge">
             <div className="live-dot" />
             LIVE

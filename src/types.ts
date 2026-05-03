@@ -46,4 +46,19 @@ export interface SalesSummary {
   avgCommissionPerSale: number;
 }
 
-export type ActiveTab = 'dashboard' | 'daily' | 'hourly' | 'subids' | 'notifications';
+export interface ApiSettings {
+  id: string;
+  account_id: string;
+  token: string;
+  label?: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  api_settings_id: string;
+  buygoods_id?: string;
+}
+
+export type ActiveTab = 'dashboard' | 'daily' | 'hourly' | 'subids' | 'notifications' | 'settings';
+

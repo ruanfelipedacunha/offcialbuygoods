@@ -12,7 +12,9 @@ import {
   Filler,
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
-import type { DayData, SalesSummary } from '../types';
+import type { DayData, SalesSummary, Product, SubIdData } from '../types';
+import { useState, useMemo } from 'react';
+
 
 ChartJS.register(
   CategoryScale,
@@ -31,12 +33,45 @@ interface Props {
   dailyData: DayData[];
   days: number;
   setDays: (d: number) => void;
+  products: Product[];
+  subIdData: SubIdData[];
 }
+
 
 const DAY_OPTIONS = [7, 14, 30, 60];
 
-export default function Dashboard({ summary, dailyData, days, setDays }: Props) {
+export default function Dashboard({ summary, dailyData, days, setDays, products, subIdData }: Props) {
+  const [activeProductId, setActiveProductId] = useState<string | null>(null);
+
+  const activeProduct = useMemo(() => 
+    products.find(p => p.id === activeProductId), 
+  [products, activeProductId]);
+
+  // If a product is selected, we try to find its subid match
+  const filteredSummary = useMemo(() => {
+    if (!activeProduct) return summary;
+    
+    // Search for a SubID that matches the product name or ID
+    const match = subIdData.find(s => 
+      s.subid.toLowerCase() === activeProduct.name.toLowerCase() ||
+      (activeProduct.buygoods_id && s.subid === activeProduct.buygoods_id)
+    );
+
+    if (match) {
+      return {
+        totalVisits: match.visits,
+        totalGrossCommissions: match.gross_commissions,
+        totalNetCommissions: match.net_commissions,
+        totalConversions: match.conversions_count,
+        conversionRate: match.visits > 0 ? (match.conversions_count / match.visits) * 100 : 0,
+        avgCommissionPerSale: match.conversions_count > 0 ? match.net_commissions / match.conversions_count : 0,
+      };
+    }
+    return { ...summary, isGeneral: true }; // Fallback to general if no subid match
+  }, [summary, activeProduct, subIdData]);
+
   const sorted = [...dailyData].sort((a, b) => a.date.localeCompare(b.date));
+
   const labels = sorted.map(d => {
     const [, m, day] = d.date.split('-');
     return `${day}/${m}`;
@@ -153,6 +188,28 @@ export default function Dashboard({ summary, dailyData, days, setDays }: Props) 
         ))}
       </div>
 
+      {/* Product Filter */}
+      {products.length > 0 && (
+        <div className="product-filter glass" style={{ padding: '8px', borderRadius: '12px', display: 'flex', gap: '8px', overflowX: 'auto' }}>
+          <button 
+            className={`date-btn ${!activeProductId ? 'active' : ''}`}
+            onClick={() => setActiveProductId(null)}
+          >
+            Todos Produtos
+          </button>
+          {products.map(p => (
+            <button 
+              key={p.id}
+              className={`date-btn ${activeProductId === p.id ? 'active' : ''}`}
+              onClick={() => setActiveProductId(p.id)}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+
       {/* Today's Highlight */}
       {todayData && (
         <div style={{
@@ -199,25 +256,26 @@ export default function Dashboard({ summary, dailyData, days, setDays }: Props) 
       <div className="kpi-grid">
         <div className="kpi-card green fade-in-up">
           <div className="kpi-icon">💰</div>
-          <div className="kpi-value">${summary.totalNetCommissions.toFixed(2)}</div>
+          <div className="kpi-value">${filteredSummary.totalNetCommissions.toFixed(2)}</div>
           <div className="kpi-label">Comissões Líquidas</div>
         </div>
         <div className="kpi-card purple fade-in-up">
           <div className="kpi-icon">🎯</div>
-          <div className="kpi-value">{summary.totalConversions}</div>
+          <div className="kpi-value">{filteredSummary.totalConversions}</div>
           <div className="kpi-label">Total de Vendas</div>
         </div>
         <div className="kpi-card orange fade-in-up">
           <div className="kpi-icon">👁️</div>
-          <div className="kpi-value">{summary.totalVisits.toLocaleString()}</div>
+          <div className="kpi-value">{filteredSummary.totalVisits.toLocaleString()}</div>
           <div className="kpi-label">Visitas</div>
         </div>
         <div className="kpi-card blue fade-in-up">
           <div className="kpi-icon">📈</div>
-          <div className="kpi-value">{summary.conversionRate.toFixed(2)}%</div>
+          <div className="kpi-value">{filteredSummary.conversionRate.toFixed(2)}%</div>
           <div className="kpi-label">Taxa de Conv.</div>
         </div>
       </div>
+
 
       {/* Avg Commission */}
       {summary.avgCommissionPerSale > 0 && (

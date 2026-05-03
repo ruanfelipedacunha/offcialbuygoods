@@ -1,13 +1,16 @@
 import axios from 'axios';
 import type { ClickCRMResponse, DayData, HourData, SubIdData, SubId2Data } from './types';
-import { buildClickCRMUrl, buildDateRange } from './config';
+import { buildDateRange } from './config';
+
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 async function fetchAllPages<T>(
   endpoint: 'byday' | 'byhour' | 'bysubid' | 'bysubid2',
   dateFrom: string,
-  dateTo: string
+  dateTo: string,
+  accountId: string,
+  token: string
 ): Promise<T[]> {
   const results: T[] = [];
   let nextPage: number | undefined = undefined;
@@ -18,7 +21,9 @@ async function fetchAllPages<T>(
     if (iterations > 0) {
       await sleep(1000); // Wait 1 second between pages to prevent rate limits
     }
-    const url = buildClickCRMUrl(endpoint, dateFrom, dateTo, nextPage);
+    const base = `/api/clickcrm/${endpoint}`;
+    let url = `${base}?a=${accountId}&token=${token}&date_from=${dateFrom}&date_to=${dateTo}&response_type=json`;
+    if (nextPage !== undefined) url += `&next_page=${nextPage}`;
     let retryCount = 0;
     const maxRetries = 3;
     let data;
@@ -61,25 +66,29 @@ async function fetchAllPages<T>(
   return results;
 }
 
-export async function fetchDailyData(days = 60): Promise<DayData[]> {
+export async function fetchDailyData(accountId: string, token: string, days = 60): Promise<DayData[]> {
   const { dateFrom, dateTo } = buildDateRange(days);
-  return fetchAllPages<DayData>('byday', dateFrom, dateTo);
+  return fetchAllPages<DayData>('byday', dateFrom, dateTo, accountId, token);
 }
 
-export async function fetchHourlyData(days = 30): Promise<HourData[]> {
+
+export async function fetchHourlyData(accountId: string, token: string, days = 30): Promise<HourData[]> {
   const { dateFrom, dateTo } = buildDateRange(days);
-  return fetchAllPages<HourData>('byhour', dateFrom, dateTo);
+  return fetchAllPages<HourData>('byhour', dateFrom, dateTo, accountId, token);
 }
 
-export async function fetchBySubId(days = 60): Promise<SubIdData[]> {
+
+export async function fetchBySubId(accountId: string, token: string, days = 60): Promise<SubIdData[]> {
   const { dateFrom, dateTo } = buildDateRange(days);
-  return fetchAllPages<SubIdData>('bysubid', dateFrom, dateTo);
+  return fetchAllPages<SubIdData>('bysubid', dateFrom, dateTo, accountId, token);
 }
 
-export async function fetchBySubId2(days = 60): Promise<SubId2Data[]> {
+
+export async function fetchBySubId2(accountId: string, token: string, days = 60): Promise<SubId2Data[]> {
   const { dateFrom, dateTo } = buildDateRange(days);
-  return fetchAllPages<SubId2Data>('bysubid2', dateFrom, dateTo);
+  return fetchAllPages<SubId2Data>('bysubid2', dateFrom, dateTo, accountId, token);
 }
+
 
 export function computeSummary(daily: DayData[]) {
   const totalVisits = daily.reduce((s, d) => s + (d.visits || 0), 0);
